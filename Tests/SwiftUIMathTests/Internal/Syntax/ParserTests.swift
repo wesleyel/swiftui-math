@@ -1989,6 +1989,57 @@ struct ParserTests {
   }
 
   @Test
+  func operatorname() throws {
+    // Basic usage: \operatorname{Res}
+    var str = "\\operatorname{Res}"
+    var list = try #require(Math.Parser.build(fromString: str))
+    #expect(list.atoms.count == 1)
+    var op = try #require(list.atoms[0] as? Math.LargeOperator)
+    #expect(op.type == .largeOperator)
+    #expect(op.nucleus == "Res")
+    #expect(!op.limits)
+
+    // Serializes back as \operatorname{Res}
+    var latex = Math.Parser.atomListToString(list)
+    #expect(latex == "\\operatorname{Res}")
+
+    // With argument: \operatorname{sgn}(x)
+    str = "\\operatorname{sgn}(x)"
+    list = try #require(Math.Parser.build(fromString: str))
+    op = try #require(list.atoms.first(where: { $0.type == .largeOperator }) as? Math.LargeOperator)
+    #expect(op.nucleus == "sgn")
+    #expect(!op.limits)
+
+    // Another common operator: \operatorname{tr}(A)
+    str = "\\operatorname{tr}(A)"
+    list = try #require(Math.Parser.build(fromString: str))
+    op = try #require(list.atoms.first(where: { $0.type == .largeOperator }) as? Math.LargeOperator)
+    #expect(op.nucleus == "tr")
+    #expect(!op.limits)
+
+    // With subscript: \operatorname{Res}_{z=0} f(z)
+    str = "\\operatorname{Res}_{z=0} f(z)"
+    list = try #require(Math.Parser.build(fromString: str))
+    op = try #require(list.atoms.first(where: { $0.type == .largeOperator }) as? Math.LargeOperator)
+    #expect(op.nucleus == "Res")
+    #expect(op.subscript != nil)
+
+    // With superscript: \operatorname{Res}^{2}
+    str = "\\operatorname{Res}^{2}"
+    list = try #require(Math.Parser.build(fromString: str))
+    op = try #require(list.atoms.first(where: { $0.type == .largeOperator }) as? Math.LargeOperator)
+    #expect(op.nucleus == "Res")
+    #expect(op.superscript != nil)
+
+    // Error case: empty argument \operatorname{}
+    str = "\\operatorname{}"
+    var error: Math.ParserError? = nil
+    let errorList = Math.Parser.build(fromString: str, error: &error)
+    #expect(errorList == nil)
+    #expect(error != nil)
+  }
+
+  @Test
   func arrows() throws {
     let arrows = [
       "leftarrow", "rightarrow", "uparrow", "downarrow", "leftrightarrow",

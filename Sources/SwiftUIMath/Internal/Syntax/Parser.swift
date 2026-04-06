@@ -571,15 +571,20 @@ extension Math {
             }
           } else if atom.type == .largeOperator {
             let op = atom as! LargeOperator
-            let command = AtomFactory.latexSymbolName(for: atom)
-            let originalOp = AtomFactory.atom(forLatexSymbol: command!) as! LargeOperator
-            str += "\\\(command!) "
-            if originalOp.limits != op.limits {
-              if op.limits {
-                str += "\\limits "
-              } else {
-                str += "\\nolimits "
+            if let command = AtomFactory.latexSymbolName(for: atom) {
+              // Known built-in operator (e.g. \sin, \sum)
+              let originalOp = AtomFactory.atom(forLatexSymbol: command) as! LargeOperator
+              str += "\\\(command) "
+              if originalOp.limits != op.limits {
+                if op.limits {
+                  str += "\\limits "
+                } else {
+                  str += "\\nolimits "
+                }
               }
+            } else {
+              // Custom operator defined via \operatorname
+              str += "\\operatorname{\(op.nucleus)}"
             }
           } else if atom.type == .space {
             if let space = atom as? Space {
@@ -848,6 +853,28 @@ extension Math {
 
         inner.innerList = innerList
         return inner
+      } else if command == "operatorname" {
+        // \operatorname{name} — renders argument as an upright operator (no limits by default)
+        guard self.expectCharacter("{") else {
+          self.setError(.characterNotFound, message: "Missing { after \\operatorname")
+          return nil
+        }
+        self.skipSpaces()
+        var name = ""
+        while self.hasCharacters {
+          let ch = self.nextCharacter()
+          if ch == "}" {
+            break
+          }
+          name.append(ch)
+        }
+        name = name.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else {
+          self.setError(.invalidCommand, message: "\\operatorname requires a non-empty argument")
+          return nil
+        }
+        // Create a LargeOperator with the given name, no limits (like \sin, \log)
+        return AtomFactory.operatorWithName(name, limits: false)
       } else if command == "not" {
         // Handle \not command with lookahead for comprehensive negation support
         let nextCommand = self.peekNextCommand()
