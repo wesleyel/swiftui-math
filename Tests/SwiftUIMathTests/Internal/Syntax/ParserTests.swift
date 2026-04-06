@@ -1090,6 +1090,28 @@ struct ParserTests {
   }
 
   @Test
+  func arrayRejectsInvalidColumnFormat() throws {
+    let str = "\\begin{array}{xyz}a\\end{array}"
+    var error: Math.ParserError? = nil
+
+    let list = Math.Parser.build(fromString: str, error: &error)
+
+    #expect(list == nil)
+    #expect(error?.code == .invalidEnvironment)
+  }
+
+  @Test
+  func arrayRejectsTooFewColumnSpecifiers() throws {
+    let str = "\\begin{array}{l}a&b\\end{array}"
+    var error: Math.ParserError? = nil
+
+    let list = Math.Parser.build(fromString: str, error: &error)
+
+    #expect(list == nil)
+    #expect(error?.code == .invalidNumberOfColumns)
+  }
+
+  @Test
   func defaultTable() throws {
     let str = "x \\\\ y"
     let list = try #require(Math.Parser.build(fromString: str))
