@@ -712,13 +712,7 @@ extension Math {
             return table
           }
         } else if env == "array" {
-          guard let columnAlignments else {
-            let message = "array environment requires at least 1 column alignment"
-            if error == nil {
-              error = ParserError(code: .invalidEnvironment, message: message)
-            }
-            return nil
-          }
+          let columnAlignments = columnAlignments ?? []
 
           if table.numberOfColumns > columnAlignments.count {
             let message = "array environment has more columns than alignment specifiers"
