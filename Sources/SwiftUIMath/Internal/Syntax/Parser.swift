@@ -1329,7 +1329,7 @@ extension Math {
           format.append(char)
         case "|":
           format.append(char)
-        case " ":
+        case _ where char.isWhitespace:
           continue
         default:
           self.setError(
@@ -1346,7 +1346,9 @@ extension Math {
 
       if self.error == nil && columnAlignments.isEmpty {
         self.setError(
-          .invalidEnvironment, message: "array environment requires column alignment specifiers")
+          .invalidEnvironment,
+          message: "array environment requires at least one column alignment specifier (l, c, or r)"
+        )
       }
 
       return self.error == nil ? (columnAlignments, format) : (nil, nil)
