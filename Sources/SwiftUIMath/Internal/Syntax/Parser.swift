@@ -805,11 +805,7 @@ extension Math {
 
         return table
       } else if command == "begin" {
-        let env = self.readEnvironment()
-        if env == nil {
-          return nil
-        }
-        guard let env else {
+        guard let env = self.readEnvironment() else {
           return nil
         }
         guard let environmentOptions = self.readEnvironmentOptions(for: env) else {
