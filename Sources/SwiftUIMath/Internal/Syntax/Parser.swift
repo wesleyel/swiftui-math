@@ -809,27 +809,17 @@ extension Math {
         if env == nil {
           return nil
         }
-        var alignment: Table.ColumnAlignment? = nil
-        var columnAlignments: [Table.ColumnAlignment]? = nil
-        var columnFormat: String? = nil
-        if let env {
-          if env.hasSuffix("*") {
-            alignment = self.readOptionalAlignment()
-            if self.error != nil {
-              return nil
-            }
-          } else if env == "array" {
-            (columnAlignments, columnFormat) = self.readArrayColumnFormat()
-            if self.error != nil {
-              return nil
-            }
-          }
+        guard let env else {
+          return nil
+        }
+        guard let environmentOptions = self.readEnvironmentOptions(for: env) else {
+          return nil
         }
         let table = self.buildTable(
           environment: env,
-          alignment: alignment,
-          columnAlignments: columnAlignments,
-          columnFormat: columnFormat,
+          alignment: environmentOptions.alignment,
+          columnAlignments: environmentOptions.columnAlignments,
+          columnFormat: environmentOptions.columnFormat,
           firstList: nil,
           isRow: false
         )
@@ -1189,27 +1179,15 @@ extension Math {
         return under
       } else if command == "begin" {
         if let env = self.readEnvironment() {
-          // Check if this is a starred matrix environment and read optional alignment
-          var alignment: Table.ColumnAlignment? = nil
-          var columnAlignments: [Table.ColumnAlignment]? = nil
-          var columnFormat: String? = nil
-          if env.hasSuffix("*") {
-            alignment = self.readOptionalAlignment()
-            if self.error != nil {
-              return nil
-            }
-          } else if env == "array" {
-            (columnAlignments, columnFormat) = self.readArrayColumnFormat()
-            if self.error != nil {
-              return nil
-            }
+          guard let environmentOptions = self.readEnvironmentOptions(for: env) else {
+            return nil
           }
 
           let table = self.buildTable(
             environment: env,
-            alignment: alignment,
-            columnAlignments: columnAlignments,
-            columnFormat: columnFormat,
+            alignment: environmentOptions.alignment,
+            columnAlignments: environmentOptions.columnAlignments,
+            columnFormat: environmentOptions.columnFormat,
             firstList: nil,
             isRow: false
           )
@@ -1296,6 +1274,24 @@ extension Math {
       }
 
       return alignment
+    }
+
+    mutating func readEnvironmentOptions(for env: String) -> (
+      alignment: Table.ColumnAlignment?,
+      columnAlignments: [Table.ColumnAlignment]?,
+      columnFormat: String?
+    )? {
+      if env.hasSuffix("*") {
+        let alignment = self.readOptionalAlignment()
+        return self.error == nil ? (alignment, nil, nil) : nil
+      }
+
+      if env == "array" {
+        let (columnAlignments, columnFormat) = self.readArrayColumnFormat()
+        return self.error == nil ? (nil, columnAlignments, columnFormat) : nil
+      }
+
+      return (nil, nil, nil)
     }
 
     mutating func readArrayColumnFormat() -> ([Table.ColumnAlignment]?, String?) {
