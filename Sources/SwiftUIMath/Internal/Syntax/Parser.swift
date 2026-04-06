@@ -1345,7 +1345,8 @@ extension Math {
       }
 
       if self.error == nil && columnAlignments.isEmpty {
-        self.setError(.invalidEnvironment, message: "array environment requires column alignment specifiers")
+        self.setError(
+          .invalidEnvironment, message: "array environment requires column alignment specifiers")
       }
 
       return self.error == nil ? (columnAlignments, format) : (nil, nil)
