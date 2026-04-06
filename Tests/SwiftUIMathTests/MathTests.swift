@@ -75,6 +75,33 @@
     }
 
     @Test
+    func complexIntegralFormulas() {
+      let view = VStack(alignment: .leading, spacing: 16) {
+        Math(
+          "\\lim _{x \\rightarrow 0} \\frac{a x-\\sin x}{\\int_{b}^{x} \\frac{\\ln \\left(1+t^{3}\\right)}{t} \\mathrm{~d} t}=c, c \\neq 0"
+        )
+        .mathTypesettingStyle(.display)
+        .mathFont(Math.Font(name: .latinModern, size: 20))
+
+        Math(
+          "\\lim _{n \\rightarrow \\infty} \\sum_{i=1}^{n} \\sum_{j=1}^{n} \\frac{n}{(n+i)\\left(n^{2}+j^{2}\\right)}="
+        )
+        .mathTypesettingStyle(.display)
+        .mathFont(Math.Font(name: .latinModern, size: 20))
+
+        Math(
+          "\\lim _{x \\rightarrow 0} \\frac{\\int_{0}^{x}\\left[\\int_{0}^{u^{2}} \\arctan (1+t) \\mathrm{d} t\\right] \\mathrm{d} u}{x(1-\\cos x)}"
+        )
+        .mathTypesettingStyle(.display)
+        .mathFont(Math.Font(name: .latinModern, size: 20))
+      }
+      .background(Color.guide)
+      .padding(.horizontal)
+
+      assertSnapshot(of: view, as: .image(layout: layout))
+    }
+
+    @Test
     func inlineTextWrapping() {
       let view = VStack(alignment: .leading, spacing: 16) {
         Math("\\text{Rappelons la conversion : 1 km équivaut à 1000 m.}")

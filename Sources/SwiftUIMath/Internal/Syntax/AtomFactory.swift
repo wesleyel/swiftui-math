@@ -537,8 +537,10 @@ extension Math {
         return atom(fromAccentedCharacter: ch)
       case _ where ch.utf32 < 0x0021 || ch.utf32 > 0x007E:
         return nil
-      case "$", "%", "#", "&", "~", "\'", "^", "_", "{", "}", "\\":
+      case "$", "%", "#", "&", "\'", "^", "_", "{", "}", "\\":
         return nil
+      case "~":
+        return Space(amount: 3)
       case "(", "[":
         return Atom(type: .open, nucleus: stringValue)
       case ")", "]", "!", "?":

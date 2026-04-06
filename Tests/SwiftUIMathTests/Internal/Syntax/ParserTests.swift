@@ -2568,4 +2568,41 @@ struct ParserTests {
     }
   }
 
+  @Test
+  func complexFormulas() throws {
+    // Formula 1: limit with integral in denominator, using \mathrm{~d} for the differential
+    let formula1 =
+      "\\lim _{x \\rightarrow 0} \\frac{a x-\\sin x}{\\int_{b}^{x} \\frac{\\ln \\left(1+t^{3}\\right)}{t} \\mathrm{~d} t}=c, c \\neq 0"
+    // Formula 2: double sum with nested fractions and grouped terms
+    let formula2 =
+      "\\lim _{n \\rightarrow \\infty} \\sum_{i=1}^{n} \\sum_{j=1}^{n} \\frac{n}{(n+i)\\left(n^{2}+j^{2}\\right)}="
+    // Formula 3: nested integrals with arctan and \mathrm{d} differentials
+    let formula3 =
+      "\\lim _{x \\rightarrow 0} \\frac{\\int_{0}^{x}\\left[\\int_{0}^{u^{2}} \\arctan (1+t) \\mathrm{d} t\\right] \\mathrm{d} u}{x(1-\\cos x)}"
+
+    for formula in [formula1, formula2, formula3] {
+      var error: Math.ParserError? = nil
+      let list = Math.Parser.build(fromString: formula, error: &error)
+      #expect(error == nil, "Unexpected parse error for formula: \(formula)")
+      let unwrappedList = try #require(list)
+      #expect(!unwrappedList.atoms.isEmpty)
+    }
+  }
+
+  @Test
+  func tildeAsSpace() throws {
+    // ~ in math mode should produce a thin space, not an error
+    let testCases: [(String, String)] = [
+      ("a~b", "a\\, b"),
+      ("\\mathrm{~d}", "\\mathrm{\\, d}"),
+    ]
+    for (input, expected) in testCases {
+      var error: Math.ParserError? = nil
+      let list = Math.Parser.build(fromString: input, error: &error)
+      #expect(error == nil)
+      let latex = Math.Parser.atomListToString(list)
+      #expect(latex == expected, "Round-trip mismatch for input '\(input)'")
+    }
+  }
+
 }
