@@ -1332,18 +1332,22 @@ extension Math {
         }
       }
 
-      if self.error == nil && !foundClosingBrace {
+      if !foundClosingBrace {
         self.setError(.characterNotFound, message: "Missing } after array column format")
       }
 
-      if self.error == nil && columnAlignments.isEmpty {
+      if columnAlignments.isEmpty {
         self.setError(
           .invalidEnvironment,
           message: "array environment requires at least one column alignment specifier (l, c, or r)"
         )
       }
 
-      return self.error == nil ? (columnAlignments, format) : (nil, nil)
+      if self.error != nil {
+        return (nil, nil)
+      }
+
+      return (columnAlignments, format)
     }
 
     func assertNotSpace(_ ch: Character) {

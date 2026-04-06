@@ -712,7 +712,7 @@ extension Math {
             return table
           }
         } else if env == "array" {
-          guard let columnAlignments, !columnAlignments.isEmpty else {
+          guard let columnAlignments else {
             let message = "array environment requires at least 1 column alignment"
             if error == nil {
               error = ParserError(code: .invalidEnvironment, message: message)
