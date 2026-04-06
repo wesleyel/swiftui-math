@@ -11,6 +11,7 @@ extension Math {
     var alignments: [ColumnAlignment]
     var cells: [[AtomList]]
     var environment: String
+    var columnFormat: String?
     var interColumnSpacing: CGFloat
     var interRowAdditionalSpacing: CGFloat
 
@@ -32,6 +33,7 @@ extension Math {
         row.map { AtomList($0) }
       }
       self.environment = table.environment
+      self.columnFormat = table.columnFormat
       self.interColumnSpacing = table.interColumnSpacing
       self.interRowAdditionalSpacing = table.interRowAdditionalSpacing
 
@@ -42,12 +44,14 @@ extension Math {
       alignments: [ColumnAlignment] = [],
       cells: [[AtomList]] = [],
       environment: String = "",
+      columnFormat: String? = nil,
       interColumnSpacing: CGFloat = 0,
       interRowAdditionalSpacing: CGFloat = 0
     ) {
       self.alignments = alignments
       self.cells = cells
       self.environment = environment
+      self.columnFormat = columnFormat
       self.interColumnSpacing = interColumnSpacing
       self.interRowAdditionalSpacing = interRowAdditionalSpacing
       super.init(type: .table)

@@ -1053,6 +1053,43 @@ struct ParserTests {
   }
 
   @Test
+  func array() throws {
+    let str = "\\left\\{\\begin{array}{ll}1,&|x|\\leq1,\\\\0,&|x|>1,\\end{array}\\right."
+    let list = try #require(Math.Parser.build(fromString: str))
+    #expect(list.atoms.count == 1)
+
+    let inner = try #require(list.atoms[0] as? Math.Inner)
+    let leftBoundary = try #require(inner.leftBoundary)
+    #expect(leftBoundary.type == .boundary)
+    #expect(leftBoundary.nucleus == "{")
+    #expect(inner.rightBoundary == nil)
+
+    let innerList = try #require(inner.innerList)
+    #expect(innerList.atoms.count == 1)
+
+    let table = try #require(innerList.atoms[0] as? Math.Table)
+    #expect(table.environment == "array")
+    #expect(table.columnFormat == "ll")
+    #expect(table.interRowAdditionalSpacing == 0)
+    #expect(table.interColumnSpacing == 18)
+    #expect(table.numberOfRows == 2)
+    #expect(table.numberOfColumns == 2)
+    #expect(table.alignment(forColumn: 0) == .left)
+    #expect(table.alignment(forColumn: 1) == .left)
+
+    for row in 0..<table.numberOfRows {
+      for column in 0..<table.numberOfColumns {
+        let style = try #require(table.cells[row][column].atoms.first as? Math.Style)
+        #expect(style.level == .text)
+      }
+    }
+
+    let latex = Math.Parser.atomListToString(list)
+    #expect(latex.contains("\\begin{array}{ll}"))
+    #expect(latex.contains("\\right."))
+  }
+
+  @Test
   func defaultTable() throws {
     let str = "x \\\\ y"
     let list = try #require(Math.Parser.build(fromString: str))
