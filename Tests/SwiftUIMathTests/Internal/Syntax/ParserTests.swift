@@ -2522,25 +2522,30 @@ struct ParserTests {
 
   @Test
   func boldsymbol() throws {
-    // Test \boldsymbol for bold Greek letters
-    let testCases = [
-      ("\\boldsymbol{\\alpha}", "bold alpha"),
-      ("\\boldsymbol{\\beta}", "bold beta"),
-      ("\\boldsymbol{\\Gamma}", "bold Gamma"),
-      ("\\mathbf{x} + \\boldsymbol{\\mu}", "mixed bold"),
-    ]
+    var error: Math.ParserError? = nil
 
-    for (latex, _) in testCases {
-      var error: Math.ParserError? = nil
-      let list = Math.Parser.build(fromString: latex, error: &error)
+    let latinList = try #require(Math.Parser.build(fromString: "\\boldsymbol{a}", error: &error))
+    #expect(error == nil)
+    #expect(latinList.atoms.count == 1)
+    #expect(latinList.atoms[0].nucleus == "a")
+    #expect(latinList.atoms[0].fontStyle == .boldItalic)
+    #expect(Math.Parser.atomListToString(latinList) == "\\bm{a}")
 
-      if list == nil || error != nil {
-        return
-      }
-
-      let unwrappedList = try #require(list)
-      #expect(unwrappedList.atoms.count >= 1)
+    for latex in ["\\boldsymbol{\\alpha}", "\\boldsymbol{\\beta}", "\\boldsymbol{\\Gamma}"] {
+      error = nil
+      let list = try #require(Math.Parser.build(fromString: latex, error: &error))
+      #expect(error == nil)
+      #expect(list.atoms.count == 1)
+      #expect(list.atoms[0].fontStyle == .boldItalic)
     }
+
+    error = nil
+    let mixedList = try #require(Math.Parser.build(fromString: "\\mathbf{x} + \\boldsymbol{\\mu}", error: &error))
+    #expect(error == nil)
+    #expect(mixedList.atoms.count == 3)
+    #expect(mixedList.atoms[0].fontStyle == .bold)
+    #expect(mixedList.atoms[1].fontStyle == .default)
+    #expect(mixedList.atoms[2].fontStyle == .boldItalic)
   }
 
   @Test
