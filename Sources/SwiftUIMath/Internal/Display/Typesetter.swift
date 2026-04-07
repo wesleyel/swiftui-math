@@ -1846,7 +1846,11 @@ extension Math {
       let spaceArray = getInterElementSpaces()[Int(leftIndex)]
       let spaceTypeObj = spaceArray[Int(rightIndex)]
       let spaceType = spaceTypeObj
-      assert(spaceType != .invalid, "Invalid space between \(left) and \(right)")
+      // Keep malformed LaTeX from crashing debug builds. Propagating NaN lets callers
+      // detect the failed layout and surface it as a validation issue instead.
+      if spaceType == .invalid {
+        return .nan
+      }
 
       let spaceMultipler = self.getSpacingInMu(spaceType)
       if spaceMultipler > 0 {

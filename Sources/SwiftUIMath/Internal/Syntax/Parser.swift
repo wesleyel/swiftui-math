@@ -31,12 +31,21 @@ extension Math {
       var ended: Bool
       var numberOfRows: Int
       var alignment: Table.ColumnAlignment?  // Optional alignment for starred matrix environments
+      var columnAlignments: [Table.ColumnAlignment]?
+      var columnFormat: String?
 
-      init(name: String?, alignment: Table.ColumnAlignment? = nil) {
+      init(
+        name: String?,
+        alignment: Table.ColumnAlignment? = nil,
+        columnAlignments: [Table.ColumnAlignment]? = nil,
+        columnFormat: String? = nil
+      ) {
         self.name = name
         self.numberOfRows = 0
         self.ended = false
         self.alignment = alignment
+        self.columnAlignments = columnAlignments
+        self.columnFormat = columnFormat
       }
     }
 
@@ -519,13 +528,16 @@ extension Math {
             if let table = atom as? Table {
               if !table.environment.isEmpty {
                 str += "\\begin{\(table.environment)}"
+                if table.environment == "array" {
+                  str += "{\(table.columnFormat ?? "")}"
+                }
               }
 
               for i in 0..<table.numberOfRows {
                 let row = table.cells[i]
                 for j in 0..<row.count {
                   let cell = row[j]
-                  if table.environment == "matrix" {
+                  if table.environment == "matrix" || table.environment == "array" {
                     if cell.atoms.count >= 1 && cell.atoms[0].type == Math.AtomType.style {
                       // remove first atom
                       cell.atoms.removeFirst()
@@ -752,6 +764,12 @@ extension Math {
         // reinstate the old inner atom.
         let newInner = currentInnerAtom
         currentInnerAtom = oldInner
+        if newInner?.leftBoundary?.nucleus.isEmpty == true {
+          newInner?.leftBoundary = nil
+        }
+        if newInner?.rightBoundary?.nucleus.isEmpty == true {
+          newInner?.rightBoundary = nil
+        }
         return newInner
       } else if command == "overline" {
         // The overline command has 1 arguments
@@ -793,11 +811,20 @@ extension Math {
 
         return table
       } else if command == "begin" {
-        let env = self.readEnvironment()
-        if env == nil {
+        guard let env = self.readEnvironment() else {
           return nil
         }
-        let table = self.buildTable(environment: env, firstList: nil, isRow: false)
+        guard let environmentOptions = self.readEnvironmentOptions(for: env) else {
+          return nil
+        }
+        let table = self.buildTable(
+          environment: env,
+          alignment: environmentOptions.alignment,
+          columnAlignments: environmentOptions.columnAlignments,
+          columnFormat: environmentOptions.columnFormat,
+          firstList: nil,
+          isRow: false
+        )
         return table
       } else if command == "color" {
         // A color command has 2 arguments
@@ -1141,6 +1168,12 @@ extension Math {
         }
         let newInner = self.currentInnerAtom
         currentInnerAtom = oldInner
+        if newInner?.leftBoundary?.nucleus.isEmpty == true {
+          newInner?.leftBoundary = nil
+        }
+        if newInner?.rightBoundary?.nucleus.isEmpty == true {
+          newInner?.rightBoundary = nil
+        }
         return newInner
       } else if command == "overline" {
         let over = Overline()
@@ -1154,18 +1187,15 @@ extension Math {
         return under
       } else if command == "begin" {
         if let env = self.readEnvironment() {
-          // Check if this is a starred matrix environment and read optional alignment
-          var alignment: Table.ColumnAlignment? = nil
-          if env.hasSuffix("*") {
-            alignment = self.readOptionalAlignment()
-            if self.error != nil {
-              return nil
-            }
+          guard let environmentOptions = self.readEnvironmentOptions(for: env) else {
+            return nil
           }
 
           let table = self.buildTable(
             environment: env,
-            alignment: alignment,
+            alignment: environmentOptions.alignment,
+            columnAlignments: environmentOptions.columnAlignments,
+            columnFormat: environmentOptions.columnFormat,
             firstList: nil,
             isRow: false
           )
@@ -1254,6 +1284,84 @@ extension Math {
       return alignment
     }
 
+    mutating func readEnvironmentOptions(for env: String) -> (
+      alignment: Table.ColumnAlignment?,
+      columnAlignments: [Table.ColumnAlignment]?,
+      columnFormat: String?
+    )? {
+      if env.hasSuffix("*") {
+        let alignment = self.readOptionalAlignment()
+        return self.error == nil ? (alignment, nil, nil) : nil
+      }
+
+      if env == "array" {
+        let (columnAlignments, columnFormat) = self.readArrayColumnFormat()
+        return self.error == nil ? (nil, columnAlignments, columnFormat) : nil
+      }
+
+      return (nil, nil, nil)
+    }
+
+    mutating func readArrayColumnFormat() -> ([Table.ColumnAlignment]?, String?) {
+      guard self.expectCharacter("{") else {
+        self.setError(.characterNotFound, message: "Missing { after \\begin{array}")
+        return (nil, nil)
+      }
+
+      self.skipSpaces()
+
+      var columnAlignments = [Table.ColumnAlignment]()
+      var format = ""
+      var foundClosingBrace = false
+
+      while self.hasCharacters {
+        let char = self.nextCharacter()
+        if char == "}" {
+          foundClosingBrace = true
+          break
+        }
+
+        switch char {
+        case "l":
+          columnAlignments.append(.left)
+          format.append(char)
+        case "c":
+          columnAlignments.append(.center)
+          format.append(char)
+        case "r":
+          columnAlignments.append(.right)
+          format.append(char)
+        case "|":
+          format.append(char)
+        case _ where char.isWhitespace:
+          continue
+        default:
+          self.setError(
+            .invalidEnvironment,
+            message: "Unsupported array column format specifier: \(char)"
+          )
+          return (nil, nil)
+        }
+      }
+
+      if !foundClosingBrace {
+        self.setError(.characterNotFound, message: "Missing } after array column format")
+      }
+
+      if columnAlignments.isEmpty {
+        self.setError(
+          .invalidEnvironment,
+          message: "array environment requires at least one column alignment specifier (l, c, or r)"
+        )
+      }
+
+      if self.error != nil {
+        return (nil, nil)
+      }
+
+      return (columnAlignments, format)
+    }
+
     func assertNotSpace(_ ch: Character) {
       assert(ch >= "\u{21}" && ch <= "\u{7E}", "Expected non-space character \(ch)")
     }
@@ -1261,13 +1369,20 @@ extension Math {
     mutating func buildTable(
       environment: String?,
       alignment: Table.ColumnAlignment? = nil,
+      columnAlignments: [Table.ColumnAlignment]? = nil,
+      columnFormat: String? = nil,
       firstList: AtomList?,
       isRow: Bool
     ) -> Atom? {
       // Save the current env till an new one gets built.
       let oldEnv = self.currentEnvironment
 
-      currentEnvironment = Environment(name: environment, alignment: alignment)
+      currentEnvironment = Environment(
+        name: environment,
+        alignment: alignment,
+        columnAlignments: columnAlignments,
+        columnFormat: columnFormat
+      )
 
       var currentRow = 0
       var currentCol = 0
@@ -1306,7 +1421,10 @@ extension Math {
 
       var error: ParserError? = self.error
       let table = AtomFactory.table(
-        withEnvironment: currentEnvironment?.name, alignment: currentEnvironment?.alignment,
+        withEnvironment: currentEnvironment?.name,
+        alignment: currentEnvironment?.alignment,
+        columnAlignments: currentEnvironment?.columnAlignments,
+        columnFormat: currentEnvironment?.columnFormat,
         rows: rows, error: &error)
       if table == nil && self.error == nil {
         self.error = error

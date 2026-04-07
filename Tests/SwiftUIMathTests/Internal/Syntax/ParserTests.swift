@@ -594,13 +594,21 @@ struct ParserTests {
       let innerList = try #require(inner.innerList)
       checkAtomTypes(innerList, types: testCase.type2)
 
-      let leftBoundary = try #require(inner.leftBoundary)
-      #expect(leftBoundary.type == .boundary)
-      #expect(leftBoundary.nucleus == testCase.left)
+      if testCase.left.isEmpty {
+        #expect(inner.leftBoundary == nil)
+      } else {
+        let leftBoundary = try #require(inner.leftBoundary)
+        #expect(leftBoundary.type == .boundary)
+        #expect(leftBoundary.nucleus == testCase.left)
+      }
 
-      let rightBoundary = try #require(inner.rightBoundary)
-      #expect(rightBoundary.type == .boundary)
-      #expect(rightBoundary.nucleus == testCase.right)
+      if testCase.right.isEmpty {
+        #expect(inner.rightBoundary == nil)
+      } else {
+        let rightBoundary = try #require(inner.rightBoundary)
+        #expect(rightBoundary.type == .boundary)
+        #expect(rightBoundary.nucleus == testCase.right)
+      }
 
       // convert it back to latex
       let latex = Math.Parser.atomListToString(list)
@@ -1050,6 +1058,65 @@ struct ParserTests {
     // convert it back to latex
     let latex = Math.Parser.atomListToString(list)
     #expect(latex == "\\left( \\begin{matrix}x&y\\\\ z&w\\end{matrix}\\right) ")
+  }
+
+  @Test
+  func array() throws {
+    let str = "\\left\\{\\begin{array}{ll}1,&|x|\\leq1,\\\\0,&|x|>1,\\end{array}\\right."
+    let list = try #require(Math.Parser.build(fromString: str))
+    #expect(list.atoms.count == 1)
+
+    let inner = try #require(list.atoms[0] as? Math.Inner)
+    let leftBoundary = try #require(inner.leftBoundary)
+    #expect(leftBoundary.type == .boundary)
+    #expect(leftBoundary.nucleus == "{")
+    #expect(inner.rightBoundary == nil)
+
+    let innerList = try #require(inner.innerList)
+    #expect(innerList.atoms.count == 1)
+
+    let table = try #require(innerList.atoms[0] as? Math.Table)
+    #expect(table.environment == "array")
+    #expect(table.columnFormat == "ll")
+    #expect(table.interRowAdditionalSpacing == 0)
+    #expect(table.interColumnSpacing == 18)
+    #expect(table.numberOfRows == 2)
+    #expect(table.numberOfColumns == 2)
+    #expect(table.alignment(forColumn: 0) == .left)
+    #expect(table.alignment(forColumn: 1) == .left)
+
+    for row in 0..<table.numberOfRows {
+      for column in 0..<table.numberOfColumns {
+        let style = try #require(table.cells[row][column].atoms.first as? Math.Style)
+        #expect(style.level == .text)
+      }
+    }
+
+    let latex = Math.Parser.atomListToString(list)
+    #expect(latex.contains("\\begin{array}{ll}"))
+    #expect(latex.contains("\\right."))
+  }
+
+  @Test
+  func arrayRejectsInvalidColumnFormat() throws {
+    let str = "\\begin{array}{xyz}a\\end{array}"
+    var error: Math.ParserError? = nil
+
+    let list = Math.Parser.build(fromString: str, error: &error)
+
+    #expect(list == nil)
+    #expect(error?.code == .invalidEnvironment)
+  }
+
+  @Test
+  func arrayRejectsTooFewColumnSpecifiers() throws {
+    let str = "\\begin{array}{l}a&b\\end{array}"
+    var error: Math.ParserError? = nil
+
+    let list = Math.Parser.build(fromString: str, error: &error)
+
+    #expect(list == nil)
+    #expect(error?.code == .invalidNumberOfColumns)
   }
 
   @Test

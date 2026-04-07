@@ -658,10 +658,12 @@ extension Math {
     static func table(
       withEnvironment env: String?,
       alignment: Table.ColumnAlignment? = nil,
+      columnAlignments: [Table.ColumnAlignment]? = nil,
+      columnFormat: String? = nil,
       rows: [[AtomList]],
       error: inout ParserError?
     ) -> Atom? {
-      let table = Table(environment: env ?? "")
+      let table = Table(environment: env ?? "", columnFormat: columnFormat)
 
       for i in 0..<rows.count {
         let row = rows[i]
@@ -709,6 +711,32 @@ extension Math {
           } else {
             return table
           }
+        } else if env == "array" {
+          let columnAlignments = columnAlignments ?? []
+
+          if table.numberOfColumns > columnAlignments.count {
+            let message = "array environment has more columns than alignment specifiers"
+            if error == nil {
+              error = ParserError(code: .invalidNumberOfColumns, message: message)
+            }
+            return nil
+          }
+
+          table.interRowAdditionalSpacing = 0
+          table.interColumnSpacing = 18
+
+          let style = Style(level: .text)
+          for i in 0..<table.cells.count {
+            for j in 0..<table.cells[i].count {
+              table.cells[i][j].insert(style, at: 0)
+            }
+          }
+
+          for (column, alignment) in columnAlignments.enumerated() {
+            table.setAlignment(alignment, forColumn: column)
+          }
+
+          return table
         } else if env == "eqalign" || env == "split" || env == "aligned" {
           if table.numberOfColumns != 2 {
             let message = "\(env) environment can only have 2 columns"
