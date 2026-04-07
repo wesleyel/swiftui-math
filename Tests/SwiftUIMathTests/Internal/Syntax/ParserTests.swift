@@ -2540,7 +2540,8 @@ struct ParserTests {
     }
 
     error = nil
-    let mixedList = try #require(Math.Parser.build(fromString: "\\mathbf{x} + \\boldsymbol{\\mu}", error: &error))
+    let mixedList = try #require(
+      Math.Parser.build(fromString: "\\mathbf{x} + \\boldsymbol{\\mu}", error: &error))
     #expect(error == nil)
     #expect(mixedList.atoms.count == 3)
     #expect(mixedList.atoms[0].fontStyle == .bold)
