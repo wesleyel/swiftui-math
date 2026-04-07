@@ -594,13 +594,21 @@ struct ParserTests {
       let innerList = try #require(inner.innerList)
       checkAtomTypes(innerList, types: testCase.type2)
 
-      let leftBoundary = try #require(inner.leftBoundary)
-      #expect(leftBoundary.type == .boundary)
-      #expect(leftBoundary.nucleus == testCase.left)
+      if testCase.left.isEmpty {
+        #expect(inner.leftBoundary == nil)
+      } else {
+        let leftBoundary = try #require(inner.leftBoundary)
+        #expect(leftBoundary.type == .boundary)
+        #expect(leftBoundary.nucleus == testCase.left)
+      }
 
-      let rightBoundary = try #require(inner.rightBoundary)
-      #expect(rightBoundary.type == .boundary)
-      #expect(rightBoundary.nucleus == testCase.right)
+      if testCase.right.isEmpty {
+        #expect(inner.rightBoundary == nil)
+      } else {
+        let rightBoundary = try #require(inner.rightBoundary)
+        #expect(rightBoundary.type == .boundary)
+        #expect(rightBoundary.nucleus == testCase.right)
+      }
 
       // convert it back to latex
       let latex = Math.Parser.atomListToString(list)

@@ -764,6 +764,12 @@ extension Math {
         // reinstate the old inner atom.
         let newInner = currentInnerAtom
         currentInnerAtom = oldInner
+        if newInner?.leftBoundary?.nucleus.isEmpty == true {
+          newInner?.leftBoundary = nil
+        }
+        if newInner?.rightBoundary?.nucleus.isEmpty == true {
+          newInner?.rightBoundary = nil
+        }
         return newInner
       } else if command == "overline" {
         // The overline command has 1 arguments
@@ -1162,6 +1168,12 @@ extension Math {
         }
         let newInner = self.currentInnerAtom
         currentInnerAtom = oldInner
+        if newInner?.leftBoundary?.nucleus.isEmpty == true {
+          newInner?.leftBoundary = nil
+        }
+        if newInner?.rightBoundary?.nucleus.isEmpty == true {
+          newInner?.rightBoundary = nil
+        }
         return newInner
       } else if command == "overline" {
         let over = Overline()
