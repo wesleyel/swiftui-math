@@ -1061,6 +1061,26 @@ struct TypesetterTests {
   }
 
   @Test
+  func contourIntegralFormulasRender() throws {
+    let font = try makeFont()
+    let formulas = [
+      "\\oiint_{\\Sigma} 2 x z \\, \\mathrm{d} y \\, \\mathrm{d} z",
+      "\\oiiint_{\\Omega} (x+y+z) \\, \\mathrm{d} V",
+    ]
+
+    for formula in formulas {
+      let mathList = try #require(Math.Parser.build(fromString: formula))
+      let display = try #require(
+        Math.Typesetter.createLineForMathList(mathList, font: font, style: .display))
+
+      #expect(display.linePosition == .regular)
+      #expect(!display.children.isEmpty)
+      #expect(display.width > 0)
+      #expect(display.ascent > 0)
+    }
+  }
+
+  @Test
   func fractionInlineMode_NormalFontSize() throws {
     let font = try makeFont()
     // Test that \(...\) delimiter doesn't make fractions too small

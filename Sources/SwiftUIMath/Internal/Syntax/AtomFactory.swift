@@ -301,6 +301,8 @@ extension Math {
       "iiint": operatorWithName("\u{222D}", limits: false),
       "iiiint": operatorWithName("\u{2A0C}", limits: false),
       "oint": operatorWithName("\u{222E}", limits: false),
+      "oiint": operatorWithName("\u{222F}", limits: false),
+      "oiiint": operatorWithName("\u{2230}", limits: false),
       "bigwedge": operatorWithName("\u{22C0}", limits: true),
       "bigvee": operatorWithName("\u{22C1}", limits: true),
       "bigcap": operatorWithName("\u{22C2}", limits: true),

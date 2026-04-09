@@ -2031,7 +2031,7 @@ struct ParserTests {
   @Test
   func largeOperators() throws {
     let operators = [
-      "sum", "prod", "coprod", "int", "iint", "iiint", "oint",
+      "sum", "prod", "coprod", "int", "iint", "iiint", "oint", "oiint", "oiiint",
       "bigcap", "bigcup", "bigvee", "bigwedge", "bigodot", "bigoplus", "bigotimes",
     ]
 
@@ -2360,12 +2360,14 @@ struct ParserTests {
 
   @Test
   func multipleIntegrals() throws {
-    // Test \iint, \iiint, \iiiint for multiple integrals
+    // Test multi-integral commands, including contour variants used in production content.
     let testCases = [
       ("\\iint f(x,y) dx dy", "double integral"),
       ("\\iiint f(x,y,z) dx dy dz", "triple integral"),
       ("\\iiiint f(w,x,y,z) dw dx dy dz", "quadruple integral"),
       ("\\iint_{D} f(x,y) dA", "double integral with limits"),
+      ("\\oiint_{\\Sigma} 2xz \\, \\mathrm{d}y \\, \\mathrm{d}z", "double contour integral"),
+      ("\\oiiint_{\\Omega} xyz \\, \\mathrm{d}V", "triple contour integral"),
     ]
 
     for (latex, _) in testCases {
@@ -2659,6 +2661,26 @@ struct ParserTests {
       #expect(error == nil, "Unexpected parse error for formula: \(formula)")
       let unwrappedList = try #require(list)
       #expect(!unwrappedList.atoms.isEmpty)
+    }
+  }
+
+  @Test
+  func contourIntegralFormulas() throws {
+    let formula1 =
+      "\\oiint_{\\Sigma} 2 x z \\, \\mathrm{d} y \\, \\mathrm{d} z"
+    let formula2 =
+      "\\oiiint_{\\Omega} (x+y+z) \\, \\mathrm{d} V"
+
+    for formula in [formula1, formula2] {
+      var error: Math.ParserError? = nil
+      let list = Math.Parser.build(fromString: formula, error: &error)
+
+      #expect(error == nil, "Unexpected parse error for contour integral: \(formula)")
+
+      let unwrappedList = try #require(list)
+      let firstOperator = try #require(unwrappedList.atoms.first as? Math.LargeOperator)
+      #expect(firstOperator.type == .largeOperator)
+      #expect(firstOperator.nucleus == "\u{222F}" || firstOperator.nucleus == "\u{2230}")
     }
   }
 
